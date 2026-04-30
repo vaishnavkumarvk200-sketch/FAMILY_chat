@@ -3,44 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Genz Talk - Pro</title>
+    <title>Genz Talk - Ultimate</title>
     <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
     <style>
         :root { --wa-bg: #0b141a; --wa-panel: #202c33; --wa-sent: #005c4b; --wa-received: #202c33; --wa-text: #e9edef; --wa-dim: #8696a0; --wa-green: #00a884; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background: #111b21; color: var(--wa-text); height: 100vh; display: flex; align-items: center; justify-content: center; }
+        body { background: #111b21; color: var(--wa-text); height: 100vh; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 
-        .app-container { width: 100%; max-width: 1000px; height: 95vh; display: flex; background: var(--wa-bg); border: 1px solid #222e35; }
-        
-        #login-screen { position: fixed; inset: 0; background: var(--wa-bg); display: flex; align-items: center; justify-content: center; z-index: 100; }
-        .login-box { background: var(--wa-panel); padding: 40px; border-radius: 15px; width: 90%; max-width: 400px; text-align: center; }
+        .app-container { width: 100%; max-width: 1200px; height: 100vh; display: flex; background: var(--wa-bg); overflow: hidden; }
 
-        .sidebar { width: 300px; border-right: 1px solid #222e35; display: flex; flex-direction: column; background: #111b21; }
+        /* Login Screen */
+        #login-screen { position: fixed; inset: 0; background: var(--wa-bg); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .login-box { background: var(--wa-panel); padding: 40px; border-radius: 15px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+
+        /* Sidebar */
+        .sidebar { width: 30%; min-width: 300px; border-right: 1px solid #222e35; display: flex; flex-direction: column; background: #111b21; }
         .sb-header { background: var(--wa-panel); padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; }
-        
         .avatar-container { position: relative; cursor: pointer; }
-        .my-avatar { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--wa-green); }
-        .edit-hint { position: absolute; bottom: 0; right: 0; font-size: 10px; background: var(--wa-green); border-radius: 50%; width: 15px; height: 15px; display: flex; align-items: center; justify-content: center; }
+        .my-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--wa-green); }
+        .edit-badge { position: absolute; bottom: -2px; right: -2px; background: var(--wa-green); border-radius: 50%; width: 16px; height: 16px; font-size: 10px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--wa-panel); }
 
-        .add-contact-bar { padding: 10px; background: #111b21; display: flex; gap: 5px; }
-        .add-contact-bar input { flex: 1; background: var(--wa-panel); border: none; padding: 8px 12px; border-radius: 8px; color: white; outline: none; }
+        .search-area { padding: 10px; background: #111b21; display: flex; gap: 8px; }
+        .search-area input { flex: 1; background: var(--wa-panel); border: none; padding: 8px 12px; border-radius: 8px; color: white; outline: none; font-size: 14px; }
+        .icon-btn { background: #2a3942; border: none; color: white; padding: 8px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; }
 
         .contact-list { flex: 1; overflow-y: auto; }
         .contact-item { padding: 12px 15px; display: flex; align-items: center; gap: 15px; cursor: pointer; border-bottom: 1px solid #222e35; }
+        .contact-item:hover { background: #202c33; }
         .contact-item.active { background: #2a3942; }
-        .avatar { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; background: #666; }
+        .c-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
 
-        .chat-view { flex: 1; display: flex; flex-direction: column; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-blend-mode: overlay; background-color: var(--wa-bg); }
-        .chat-header { background: var(--wa-panel); padding: 10px 15px; display: flex; align-items: center; gap: 15px; }
-        #chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
+        /* Main Chat Area */
+        .main-chat { flex: 1; display: flex; flex-direction: column; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-blend-mode: overlay; background-color: var(--wa-bg); }
+        .chat-header { background: var(--wa-panel); padding: 10px 15px; display: flex; align-items: center; gap: 15px; z-index: 10; }
+        .messages-container { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
         
-        .msg { padding: 6px 12px; border-radius: 8px; max-width: 70%; font-size: 14px; box-shadow: 0 1px 1px rgba(0,0,0,0.2); }
-        .sent { background: var(--wa-sent); align-self: flex-end; }
-        .received { background: var(--wa-received); align-self: flex-start; }
+        .bubble { padding: 8px 12px; border-radius: 8px; max-width: 65%; font-size: 14.5px; position: relative; line-height: 1.4; }
+        .sent { background: var(--wa-sent); align-self: flex-end; border-top-right-radius: 0; }
+        .received { background: var(--wa-received); align-self: flex-start; border-top-left-radius: 0; }
+        .msg-time { font-size: 10px; color: rgba(255,255,255,0.5); text-align: right; margin-top: 4px; }
 
-        .input-area { background: var(--wa-panel); padding: 10px 15px; display: flex; align-items: center; gap: 10px; }
-        .input-area input { flex: 1; background: #2a3942; border: none; padding: 10px 15px; border-radius: 20px; color: white; outline: none; }
-        
+        .input-bar { background: var(--wa-panel); padding: 10px 15px; display: flex; align-items: center; gap: 10px; }
+        .input-bar input { flex: 1; background: #2a3942; border: none; padding: 12px 18px; border-radius: 24px; color: white; outline: none; }
+        .send-circle { background: var(--wa-green); border: none; width: 45px; height: 45px; border-radius: 50%; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+
         input[type="file"] { display: none; }
     </style>
 </head>
@@ -48,145 +54,176 @@
 
 <div id="login-screen">
     <div class="login-box">
-        <h1>Genz Talk</h1>
-        <input type="text" id="usernameInput" placeholder="Set Your Username" style="width: 100%; padding: 12px; background: #2a3942; border: none; color: white; border-radius: 8px; margin-top: 15px;">
-        <button onclick="login()" style="width: 100%; padding: 12px; background: var(--wa-green); color: white; border: none; border-radius: 8px; margin-top: 15px; font-weight: bold; cursor: pointer;">Start Chatting</button>
+        <h1 style="color: var(--wa-green); margin-bottom: 5px;">Genz Talk</h1>
+        <p style="color: var(--wa-dim); margin-bottom: 20px;">The Next-Gen Messenger</p>
+        <input type="text" id="usernameInput" placeholder="Enter your name" style="width: 100%; padding: 12px; background: #2a3942; border: none; color: white; border-radius: 8px; margin-bottom: 15px; outline: none;">
+        <button onclick="login()" style="width: 100%; padding: 12px; background: var(--wa-green); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">Join Now</button>
     </div>
 </div>
 
 <div class="app-container">
     <div class="sidebar">
         <div class="sb-header">
-            <div class="avatar-container" onclick="document.getElementById('photoUpload').click()">
-                <img id="displayAvatar" class="my-avatar" src="">
-                <div class="edit-hint">✎</div>
-                <input type="file" id="photoUpload" accept="image/*" onchange="changePhoto(event)">
+            <div class="avatar-container" onclick="document.getElementById('photoInput').click()">
+                <img id="myPhoto" class="my-avatar" src="">
+                <div class="edit-badge">✎</div>
+                <input type="file" id="photoInput" accept="image/*" onchange="updateProfilePhoto(event)">
             </div>
-            <span style="font-size: 10px; color: var(--wa-dim); cursor: pointer;" onclick="logout()">Logout</span>
+            <div style="display: flex; gap: 15px; font-size: 18px; cursor: pointer;">
+                <span onclick="logout()">🚪</span>
+            </div>
         </div>
-        <div class="add-contact-bar">
-            <input type="text" id="contactSearch" placeholder="Friend's username...">
-            <button onclick="addContact()" style="background: var(--wa-green); border:none; padding: 0 10px; border-radius: 8px; color: white;">Add</button>
+        <div class="search-area">
+            <input type="text" id="addContactName" placeholder="Add friend by name..." onkeypress="if(event.key==='Enter') addContact()">
+            <button class="icon-btn" onclick="syncFromPhone()" title="Sync Contacts">👤+</button>
         </div>
         <div id="contactList" class="contact-list"></div>
     </div>
 
-    <div class="chat-view" id="chatView" style="display: none;">
+    <div class="main-chat" id="chatView" style="display: none;">
         <div class="chat-header">
-            <img id="activeChatAvatar" class="avatar" src="">
-            <div id="activeChatName" style="font-weight: bold; margin-left: 10px;"></div>
+            <img id="activeAvatar" class="c-avatar" src="">
+            <div>
+                <h4 id="activeTitle">Chat Name</h4>
+                <p style="font-size: 11px; color: var(--wa-green);">online</p>
+            </div>
         </div>
-        <div id="chat-messages"></div>
-        <div class="input-area">
-            <input type="text" id="messageInput" placeholder="Type a message">
-            <button onclick="sendMessage()" style="background: var(--wa-green); border:none; color:white; padding: 8px 15px; border-radius: 20px;">➤</button>
+        <div id="msgBox" class="messages-container"></div>
+        <div class="input-bar">
+            <input type="text" id="msgInput" placeholder="Type a message">
+            <button class="send-circle" onclick="sendMsg()">➤</button>
         </div>
+    </div>
+
+    <div id="emptyView" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--wa-dim);">
+        <h2 style="color: white; margin-bottom: 10px;">Genz Talk for Web</h2>
+        <p>Send and receive messages without keeping your phone online.</p>
     </div>
 </div>
 
 <script>
     const ABLY_KEY = '-AH-2A.nFhslQ:tmnJR6FrDPv2cg53XRnEinFRH8vELv0IksQpIeZzrlg'; 
     const ably = new Ably.Realtime(ABLY_KEY);
-    let myUsername = localStorage.getItem('genz_user') || "";
-    let myPhoto = localStorage.getItem('genz_photo') || "";
+    
+    let me = localStorage.getItem('genz_user') || "";
+    let myImg = localStorage.getItem('genz_img') || "";
     let contacts = JSON.parse(localStorage.getItem('genz_contacts') || "[]");
-    let activeChat = null;
+    let activeUser = null;
 
-    // Standard colorful avatar if no photo exists
-    function getDefaultAvatar(name) { return `https://ui-avatars.com/api/?name=${name}&background=random&color=fff`; }
+    function getAvatar(name) { return `https://ui-avatars.com/api/?name=${name}&background=random&color=fff&size=128`; }
 
     window.onload = () => {
-        if (myUsername) {
+        if (me) {
             document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('displayAvatar').src = myPhoto || getDefaultAvatar(myUsername);
+            document.getElementById('myPhoto').src = myImg || getAvatar(me);
+            Notification.requestPermission();
             initInbox();
             renderContacts();
         }
     };
 
     function login() {
-        const val = document.getElementById('usernameInput').value.trim().toLowerCase();
-        if (val) { localStorage.setItem('genz_user', val); location.reload(); }
+        const n = document.getElementById('usernameInput').value.trim().toLowerCase();
+        if (n) { localStorage.setItem('genz_user', n); location.reload(); }
     }
 
     function logout() { localStorage.clear(); location.reload(); }
 
-    function changePhoto(event) {
-        const file = event.target.files[0];
+    function updateProfilePhoto(e) {
+        const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = (e) => {
-                const imgData = e.target.result;
-                myPhoto = imgData;
-                localStorage.setItem('genz_photo', imgData);
-                document.getElementById('displayAvatar').src = imgData;
-                alert("Profile photo updated!");
+            reader.onload = (event) => {
+                myImg = event.target.result;
+                localStorage.setItem('genz_img', myImg);
+                document.getElementById('myPhoto').src = myImg;
             };
             reader.readAsDataURL(file);
         }
     }
 
+    async function syncFromPhone() {
+        if ('contacts' in navigator) {
+            try {
+                const results = await navigator.contacts.select(['name'], { multiple: true });
+                results.forEach(c => {
+                    let clean = c.name[0].toLowerCase().replace(/\s/g, '');
+                    if (clean && !contacts.includes(clean)) contacts.push(clean);
+                });
+                localStorage.setItem('genz_contacts', JSON.stringify(contacts));
+                renderContacts();
+            } catch (err) { console.log(err); }
+        } else { alert("Sync not supported on this browser."); }
+    }
+
     function addContact() {
-        const name = document.getElementById('contactSearch').value.trim().toLowerCase();
-        if (name && name !== myUsername && !contacts.includes(name)) {
-            contacts.push(name);
+        const c = document.getElementById('addContactName').value.trim().toLowerCase();
+        if (c && c !== me && !contacts.includes(c)) {
+            contacts.push(c);
             localStorage.setItem('genz_contacts', JSON.stringify(contacts));
             renderContacts();
         }
-        document.getElementById('contactSearch').value = "";
+        document.getElementById('addContactName').value = "";
     }
 
     function renderContacts() {
         const list = document.getElementById('contactList');
         list.innerHTML = "";
         contacts.forEach(c => {
-            const item = document.createElement('div');
-            item.className = `contact-item ${activeChat === c ? 'active' : ''}`;
-            item.onclick = () => openChat(c);
-            item.innerHTML = `<img class="avatar" src="${getDefaultAvatar(c)}"><div style="margin-left:10px">${c}</div>`;
-            list.appendChild(item);
+            const div = document.createElement('div');
+            div.className = `contact-item ${activeUser === c ? 'active' : ''}`;
+            div.onclick = () => openChat(c);
+            div.innerHTML = `<img class="c-avatar" src="${getAvatar(c)}"><div><strong>${c}</strong></div>`;
+            list.appendChild(div);
         });
     }
 
     function initInbox() {
-        const inbox = ably.channels.get(`inbox-${myUsername}`);
-        inbox.subscribe('msg', (m) => {
-            if (activeChat === m.data.from) renderMessage(m.data.text, 'received');
-            else if (!contacts.includes(m.data.from)) {
-                contacts.push(m.data.from);
-                localStorage.setItem('genz_contacts', JSON.stringify(contacts));
-                renderContacts();
+        ably.channels.get(`inbox-${me}`).subscribe('msg', (m) => {
+            if (activeUser === m.data.from) {
+                renderMsg(m.data.text, 'received');
+            } else {
+                if (!contacts.includes(m.data.from)) {
+                    contacts.push(m.data.from);
+                    localStorage.setItem('genz_contacts', JSON.stringify(contacts));
+                    renderContacts();
+                }
+                if (Notification.permission === "granted") {
+                    new Notification(`New Message from ${m.data.from}`, { body: m.data.text });
+                }
             }
         });
     }
 
     function openChat(name) {
-        activeChat = name;
+        activeUser = name;
+        document.getElementById('emptyView').style.display = 'none';
         document.getElementById('chatView').style.display = 'flex';
-        document.getElementById('activeChatName').innerText = name;
-        document.getElementById('activeChatAvatar').src = getDefaultAvatar(name);
-        document.getElementById('chat-messages').innerHTML = "";
+        document.getElementById('activeTitle').innerText = name;
+        document.getElementById('activeAvatar').src = getAvatar(name);
+        document.getElementById('msgBox').innerHTML = "";
         renderContacts();
     }
 
-    function sendMessage() {
-        const input = document.getElementById('messageInput');
-        if (!input.value.trim() || !activeChat) return;
-        ably.channels.get(`inbox-${activeChat}`).publish('msg', { from: myUsername, text: input.value });
-        renderMessage(input.value, 'sent');
+    function sendMsg() {
+        const input = document.getElementById('msgInput');
+        if (!input.value.trim() || !activeUser) return;
+        ably.channels.get(`inbox-${activeUser}`).publish('msg', { from: me, text: input.value });
+        renderMsg(input.value, 'sent');
         input.value = "";
     }
 
-    function renderMessage(text, type) {
-        const chat = document.getElementById('chat-messages');
+    function renderMsg(txt, type) {
+        const box = document.getElementById('msgBox');
         const div = document.createElement('div');
-        div.className = `msg ${type}`;
-        div.innerText = text;
-        chat.appendChild(div);
-        chat.scrollTop = chat.scrollHeight;
+        div.className = `bubble ${type}`;
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        div.innerHTML = `${txt}<div class="msg-time">${time}</div>`;
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
     }
 
-    document.getElementById('messageInput').addEventListener("keypress", (e) => { if(e.key === "Enter") sendMessage(); });
+    document.getElementById('msgInput').addEventListener("keypress", (e) => { if(e.key === "Enter") sendMsg(); });
 </script>
 </body>
 </html>
