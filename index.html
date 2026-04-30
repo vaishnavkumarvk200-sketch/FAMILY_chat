@@ -2,59 +2,64 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Genz Talk - Always Logged In</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Genz Talk Pro</title>
     <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
         body { background: #0b141a; color: #e9edef; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
         
-        /* Login Overlay */
         #login-screen { position: fixed; inset: 0; background: #0b141a; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
-        .login-box { background: #202c33; padding: 30px; border-radius: 15px; width: 100%; max-width: 350px; text-align: center; }
+        .login-box { background: #202c33; padding: 30px; border-radius: 15px; width: 100%; max-width: 350px; text-align: center; border: 1px solid #222e35; }
         
-        /* Main App */
-        .app { width: 100%; max-width: 450px; height: 95vh; background: #0b141a; display: flex; flex-direction: column; border-radius: 10px; border: 1px solid #222e35; }
-        .header { background: #202c33; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .status { font-size: 12px; color: #00a884; font-weight: bold; }
-        .logout-btn { font-size: 10px; color: #8696a0; cursor: pointer; text-decoration: underline; }
+        .app { width: 100%; max-width: 500px; height: 100vh; background: #0b141a; display: flex; flex-direction: column; position: relative; }
+        @media (min-height: 600px) { .app { height: 95vh; border-radius: 10px; border: 1px solid #222e35; } }
 
-        #chat { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-blend-mode: overlay; }
-        
-        .msg { padding: 8px 14px; border-radius: 8px; max-width: 80%; font-size: 15px; position: relative; box-shadow: 0 1px 1px rgba(0,0,0,0.2); }
-        .sent { background: #005c4b; align-self: flex-end; border-top-right-radius: 0; }
-        .received { background: #202c33; align-self: flex-start; border-top-left-radius: 0; }
-        
-        .user-label { font-size: 11px; font-weight: bold; margin-bottom: 4px; display: block; color: #34b7f1; }
-        .time { font-size: 10px; color: #8696a0; text-align: right; margin-top: 5px; }
+        .header { background: #202c33; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .status-dot { width: 8px; height: 8px; background: #00a884; border-radius: 50%; display: inline-block; margin-right: 5px; }
 
-        .input-bar { background: #202c33; padding: 12px; display: flex; gap: 10px; }
-        input { flex: 1; padding: 12px 18px; border-radius: 25px; border: none; background: #2a3942; color: white; outline: none; }
-        button { background: #00a884; color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 20px; }
+        #chat { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; background-color: #0b141a; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-blend-mode: overlay; scroll-behavior: smooth; }
+        
+        .msg-wrapper { display: flex; flex-direction: column; margin-bottom: 8px; }
+        .msg { padding: 8px 12px; border-radius: 12px; max-width: 85%; font-size: 15px; position: relative; box-shadow: 0 1px 1px rgba(0,0,0,0.2); line-height: 1.4; }
+        .sent { background: #005c4b; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .received { background: #202c33; align-self: flex-start; border-bottom-left-radius: 2px; }
+        
+        .user-label { font-size: 12px; font-weight: 600; margin-bottom: 2px; color: #34b7f1; }
+        .time { font-size: 10px; color: rgba(255,255,255,0.5); text-align: right; margin-top: 4px; }
+
+        .input-bar { background: #202c33; padding: 10px 15px; display: flex; gap: 10px; align-items: center; }
+        .input-container { flex: 1; background: #2a3942; border-radius: 24px; padding: 0 15px; }
+        input { width: 100%; padding: 10px 0; border: none; background: transparent; color: white; outline: none; font-size: 16px; }
+        .send-btn { background: #00a884; color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .send-btn:active { transform: scale(0.9); }
     </style>
 </head>
 <body>
 
 <div id="login-screen">
     <div class="login-box">
-        <h2 style="margin-bottom: 20px;">Genz Talk</h2>
-        <input type="text" id="usernameInput" placeholder="Enter your name..." style="width: 100%; margin-bottom: 15px;">
-        <button onclick="joinChat()" style="width: 100%; border-radius: 8px;">Join Chat</button>
+        <h2 style="margin-bottom: 10px;">Genz Talk</h2>
+        <p style="color: #8696a0; margin-bottom: 20px;">What should we call you?</p>
+        <input type="text" id="usernameInput" placeholder="Your Username" style="width: 100%; margin-bottom: 15px; padding: 12px; border-radius: 8px; border: none; background: #2a3942; color: white;">
+        <button onclick="joinChat()" style="width: 100%; border-radius: 8px; padding: 12px; background: #00a884; border: none; color: white; font-weight: bold; cursor: pointer;">Join Room</button>
     </div>
 </div>
 
 <div class="app">
     <div class="header">
         <div>
-            <strong>Genz Group</strong><br>
-            <span class="logout-btn" onclick="logout()">Change Name</span>
+            <strong>Genz Group</strong>
+            <div style="font-size: 10px; color: #8696a0; cursor: pointer;" onclick="logout()">Logout</div>
         </div>
-        <div class="status" id="connStatus">Connecting...</div>
+        <div id="connStatus" style="font-size: 12px;"><span class="status-dot"></span>Online</div>
     </div>
     <div id="chat"></div>
     <div class="input-bar">
-        <input type="text" id="msgInput" placeholder="Type a message...">
-        <button onclick="sendMsg()">➤</button>
+        <div class="input-container">
+            <input type="text" id="msgInput" placeholder="Type a message...">
+        </div>
+        <button class="send-btn" onclick="sendMsg()">➤</button>
     </div>
 </div>
 
@@ -64,34 +69,29 @@
 
     let myUsername = localStorage.getItem('savedName') || "";
     const ably = new Ably.Realtime(ABLY_KEY);
-    const channel = ably.channels.get(ROOM_NAME);
+    
+    // THE UPGRADE: Added "rewind: 20" to get the last 20 messages!
+    const channel = ably.channels.get(ROOM_NAME, { params: { rewind: '20' } });
+    
     const myId = 'user-' + Math.floor(Math.random() * 10000);
 
-    // AUTO-LOGIN LOGIC
     window.onload = () => {
-        if (myUsername !== "") {
-            document.getElementById('login-screen').style.display = 'none';
-        }
+        if (myUsername !== "") document.getElementById('login-screen').style.display = 'none';
     };
 
     function joinChat() {
-        const input = document.getElementById('usernameInput');
-        const name = input.value.trim();
-        if (name !== "") {
+        const name = document.getElementById('usernameInput').value.trim();
+        if (name) {
             myUsername = name;
-            localStorage.setItem('savedName', name); // Remember this name!
+            localStorage.setItem('savedName', name);
             document.getElementById('login-screen').style.display = 'none';
         }
     }
 
     function logout() {
         localStorage.removeItem('savedName');
-        location.reload(); // Refresh to show login screen
+        location.reload();
     }
-
-    ably.connection.on('connected', () => {
-        document.getElementById('connStatus').innerText = "Online";
-    });
 
     channel.subscribe('chat-msg', (msg) => {
         const isMe = msg.data.senderId === myId;
@@ -100,9 +100,9 @@
 
     function sendMsg() {
         const input = document.getElementById('msgInput');
-        if (input.value.trim() === "") return;
+        if (!input.value.trim()) return;
+        
         const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-
         channel.publish('chat-msg', {
             text: input.value,
             senderId: myId,
@@ -114,16 +114,21 @@
 
     function renderMessage(text, type, time, user) {
         const chat = document.getElementById('chat');
-        const div = document.createElement('div');
-        div.className = `msg ${type}`;
-        const userLabel = type === 'received' ? `<span class="user-label">${user}</span>` : '';
-        div.innerHTML = `${userLabel}${text} <div class="time">${time}</div>`;
-        chat.appendChild(div);
+        const wrapper = document.createElement('div');
+        wrapper.className = 'msg-wrapper';
+        
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `msg ${type}`;
+        
+        const userLabel = type === 'received' ? `<div class="user-label">${user}</div>` : '';
+        msgDiv.innerHTML = `${userLabel}${text}<div class="time">${time}</div>`;
+        
+        wrapper.appendChild(msgDiv);
+        chat.appendChild(wrapper);
         chat.scrollTop = chat.scrollHeight;
     }
 
     document.getElementById('msgInput').addEventListener("keypress", (e) => { if (e.key === "Enter") sendMsg(); });
-    document.getElementById('usernameInput').addEventListener("keypress", (e) => { if (e.key === "Enter") joinChat(); });
 </script>
 
 </body>
