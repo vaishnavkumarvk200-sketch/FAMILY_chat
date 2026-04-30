@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Genz Talk - Contact Sync</title>
+    <title>Genz Talk - Pro</title>
     <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
     <style>
         :root { --wa-bg: #0b141a; --wa-panel: #202c33; --wa-sent: #005c4b; --wa-received: #202c33; --wa-text: #e9edef; --wa-dim: #8696a0; --wa-green: #00a884; }
@@ -18,14 +18,17 @@
         .sidebar { width: 300px; border-right: 1px solid #222e35; display: flex; flex-direction: column; background: #111b21; }
         .sb-header { background: var(--wa-panel); padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; }
         
+        .avatar-container { position: relative; cursor: pointer; }
+        .my-avatar { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid var(--wa-green); }
+        .edit-hint { position: absolute; bottom: 0; right: 0; font-size: 10px; background: var(--wa-green); border-radius: 50%; width: 15px; height: 15px; display: flex; align-items: center; justify-content: center; }
+
         .add-contact-bar { padding: 10px; background: #111b21; display: flex; gap: 5px; }
         .add-contact-bar input { flex: 1; background: var(--wa-panel); border: none; padding: 8px 12px; border-radius: 8px; color: white; outline: none; }
-        .sync-btn { background: #2a3942; border: none; color: white; padding: 0 10px; border-radius: 8px; cursor: pointer; font-size: 18px; }
 
         .contact-list { flex: 1; overflow-y: auto; }
         .contact-item { padding: 12px 15px; display: flex; align-items: center; gap: 15px; cursor: pointer; border-bottom: 1px solid #222e35; }
         .contact-item.active { background: #2a3942; }
-        .avatar { width: 45px; height: 45px; border-radius: 50%; background: #666; }
+        .avatar { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; background: #666; }
 
         .chat-view { flex: 1; display: flex; flex-direction: column; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-blend-mode: overlay; background-color: var(--wa-bg); }
         .chat-header { background: var(--wa-panel); padding: 10px 15px; display: flex; align-items: center; gap: 15px; }
@@ -37,27 +40,32 @@
 
         .input-area { background: var(--wa-panel); padding: 10px 15px; display: flex; align-items: center; gap: 10px; }
         .input-area input { flex: 1; background: #2a3942; border: none; padding: 10px 15px; border-radius: 20px; color: white; outline: none; }
+        
+        input[type="file"] { display: none; }
     </style>
 </head>
 <body>
 
 <div id="login-screen">
     <div class="login-box">
-        <h1 style="margin-bottom: 20px;">Genz Talk</h1>
-        <input type="text" id="usernameInput" placeholder="Set Your Username" style="width: 100%; padding: 12px; background: #2a3942; border: none; color: white; border-radius: 8px; margin-bottom: 15px;">
-        <button onclick="login()" style="width: 100%; padding: 12px; background: var(--wa-green); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">Start Chatting</button>
+        <h1>Genz Talk</h1>
+        <input type="text" id="usernameInput" placeholder="Set Your Username" style="width: 100%; padding: 12px; background: #2a3942; border: none; color: white; border-radius: 8px; margin-top: 15px;">
+        <button onclick="login()" style="width: 100%; padding: 12px; background: var(--wa-green); color: white; border: none; border-radius: 8px; margin-top: 15px; font-weight: bold; cursor: pointer;">Start Chatting</button>
     </div>
 </div>
 
 <div class="app-container">
     <div class="sidebar">
         <div class="sb-header">
-            <strong>Genz Talk</strong>
+            <div class="avatar-container" onclick="document.getElementById('photoUpload').click()">
+                <img id="displayAvatar" class="my-avatar" src="">
+                <div class="edit-hint">✎</div>
+                <input type="file" id="photoUpload" accept="image/*" onchange="changePhoto(event)">
+            </div>
             <span style="font-size: 10px; color: var(--wa-dim); cursor: pointer;" onclick="logout()">Logout</span>
         </div>
         <div class="add-contact-bar">
-            <input type="text" id="contactSearch" placeholder="Type name...">
-            <button class="sync-btn" onclick="syncContacts()" title="Sync phone contacts">👤+</button>
+            <input type="text" id="contactSearch" placeholder="Friend's username...">
             <button onclick="addContact()" style="background: var(--wa-green); border:none; padding: 0 10px; border-radius: 8px; color: white;">Add</button>
         </div>
         <div id="contactList" class="contact-list"></div>
@@ -65,12 +73,13 @@
 
     <div class="chat-view" id="chatView" style="display: none;">
         <div class="chat-header">
-            <div id="activeChatName" style="font-weight: bold;"></div>
+            <img id="activeChatAvatar" class="avatar" src="">
+            <div id="activeChatName" style="font-weight: bold; margin-left: 10px;"></div>
         </div>
         <div id="chat-messages"></div>
         <div class="input-area">
             <input type="text" id="messageInput" placeholder="Type a message">
-            <button onclick="sendMessage()" style="background: var(--wa-green); border:none; color:white; padding: 8px 12px; border-radius: 20px;">Send</button>
+            <button onclick="sendMessage()" style="background: var(--wa-green); border:none; color:white; padding: 8px 15px; border-radius: 20px;">➤</button>
         </div>
     </div>
 </div>
@@ -79,14 +88,17 @@
     const ABLY_KEY = '-AH-2A.nFhslQ:tmnJR6FrDPv2cg53XRnEinFRH8vELv0IksQpIeZzrlg'; 
     const ably = new Ably.Realtime(ABLY_KEY);
     let myUsername = localStorage.getItem('genz_user') || "";
+    let myPhoto = localStorage.getItem('genz_photo') || "";
     let contacts = JSON.parse(localStorage.getItem('genz_contacts') || "[]");
     let activeChat = null;
 
-    function getAvatar(name) { return `https://ui-avatars.com/api/?name=${name}&background=random&color=fff`; }
+    // Standard colorful avatar if no photo exists
+    function getDefaultAvatar(name) { return `https://ui-avatars.com/api/?name=${name}&background=random&color=fff`; }
 
     window.onload = () => {
         if (myUsername) {
             document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('displayAvatar').src = myPhoto || getDefaultAvatar(myUsername);
             initInbox();
             renderContacts();
         }
@@ -99,27 +111,18 @@
 
     function logout() { localStorage.clear(); location.reload(); }
 
-    async function syncContacts() {
-        // Checking if the browser supports picking contacts
-        if ('contacts' in navigator && 'ContactsManager' in window) {
-            try {
-                const props = ['name'];
-                const opts = { multiple: true };
-                const selection = await navigator.contacts.select(props, opts);
-                
-                if (selection.length > 0) {
-                    selection.forEach(c => {
-                        const name = c.name[0].toLowerCase().replace(/\s/g, '');
-                        if (name && !contacts.includes(name)) contacts.push(name);
-                    });
-                    localStorage.setItem('genz_contacts', JSON.stringify(contacts));
-                    renderContacts();
-                }
-            } catch (err) {
-                console.log("Contact picker cancelled or failed: " + err);
-            }
-        } else {
-            alert("Your browser or device doesn't support syncing phone contacts directly.");
+    function changePhoto(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const imgData = e.target.result;
+                myPhoto = imgData;
+                localStorage.setItem('genz_photo', imgData);
+                document.getElementById('displayAvatar').src = imgData;
+                alert("Profile photo updated!");
+            };
+            reader.readAsDataURL(file);
         }
     }
 
@@ -140,7 +143,7 @@
             const item = document.createElement('div');
             item.className = `contact-item ${activeChat === c ? 'active' : ''}`;
             item.onclick = () => openChat(c);
-            item.innerHTML = `<img class="avatar" src="${getAvatar(c)}"><div style="margin-left:10px">${c}</div>`;
+            item.innerHTML = `<img class="avatar" src="${getDefaultAvatar(c)}"><div style="margin-left:10px">${c}</div>`;
             list.appendChild(item);
         });
     }
@@ -161,6 +164,7 @@
         activeChat = name;
         document.getElementById('chatView').style.display = 'flex';
         document.getElementById('activeChatName').innerText = name;
+        document.getElementById('activeChatAvatar').src = getDefaultAvatar(name);
         document.getElementById('chat-messages').innerHTML = "";
         renderContacts();
     }
